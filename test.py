@@ -75,6 +75,8 @@ def TagGet():
     # colNames=['ID','PN','ND','ED']
     keys=['W3.OPCUA.POINT4837','W3.OPCUA.POINT4831','W3.OPCUA.POINT4832','W3.OPCUA.POINT4833','W3.OPCUA.POINT4834']
     colNames = ('ID', 'PN', 'ND', 'ED', 'EU')
+    # colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+    # name description unit valuetype tagID engHigh engLow
 
     # keys = (1025, 1025)
 
