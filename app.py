@@ -24,14 +24,14 @@ def Svrindex(path):
     if path == 'Info':
         try:
             Info = ServiceInfo()
-            return Info
+            return jsonify(Info),200
         except Exception as e:
             print(e)
             return "Error processing Info", 500
     elif path == 'Connected':
         try:
             liveS = Connected()
-            return liveS
+            return jsonify(liveS),200
         except Exception as e:
             print(e)
             return "Error processing Connected", 500
@@ -186,13 +186,13 @@ def TagGet():
     try:
         while resultSet.Next():
             RevDic = {}
-            RevDic['name'] = resultSet.getString('GN')
-            RevDic['description'] = resultSet.getString('ED')
-            RevDic['unit'] = resultSet.getString('EU')
-            RevDic['valuetype'] = resultSet.getString('RT')
-            RevDic['tagID'] = resultSet.getString('ID')
-            RevDic['engHigh'] = resultSet.getString('TV')
-            RevDic['engLow'] = resultSet.getString('BV')
+            RevDic['name'] = resultSet.getValue('GN')
+            RevDic['description'] = resultSet.getValue('ED')
+            RevDic['unit'] = resultSet.getValue('EU')
+            RevDic['valuetype'] = resultSet.getValue('RT')
+            RevDic['tagID'] = resultSet.getValue('ID')
+            RevDic['engHigh'] = resultSet.getValue('TV')
+            RevDic['engLow'] = resultSet.getValue('BV')
             RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
@@ -275,12 +275,11 @@ def SnapShot():
     try:
         while resultSet.Next():
             RevDic = {}
-            RevDic['name'] = resultSet.getString('GN')
-            RevDic['result'] = resultSet.getString('ID')
-            RevDic['timeStamp'] = resultSet.getString('TM')
-            RevDic['status'] = resultSet.getString('DS')
-            RevDic['value'] = resultSet.getString('AV')
-
+            RevDic['name'] = resultSet.getValue('GN')
+            RevDic['result'] = resultSet.getValue('ID')
+            RevDic['timeStamp'] = resultSet.getValue('TM')
+            RevDic['status'] = resultSet.getValue('DS')
+            RevDic['value'] = resultSet.getValue('AV')
             RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
