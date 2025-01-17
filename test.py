@@ -21,7 +21,7 @@ def ServiceInfo():
         # 获取当前服务器时间
         current_time = datetime.now()
         current_time_with_tz = current_time.astimezone(timezone(timedelta(hours=8)))
-        # 格式化为指定格式
+        # 格式化为指定时间格式
         formatted_time = current_time_with_tz.isoformat()
         # print(formatted_time)
     except Exception as e:
@@ -72,35 +72,37 @@ def TagGet():
         print("Connect Error")
         return jsonify(False), 200
     tableName = 'Point'
-    # colNames=['ID','PN','ND','ED']
+
+    # 请求字符串中的位号名称列表，注意需要传入全局位号名称
     keys=['W3.OPCUA.POINT4837','W3.OPCUA.POINT4831','W3.OPCUA.POINT4832','W3.OPCUA.POINT4833','W3.OPCUA.POINT4834']
-    colNames = ('ID', 'PN', 'ND', 'ED', 'EU')
-    # colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+
     # name description unit valuetype tagID engHigh engLow
-
-    # keys = (1025, 1025)
-
-
+    colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+    # 定义返回的列表和字典
+    RevList = []
+    RevDic = {}
     resultSet = con.select(tableName, colNames, keys)
     try:
         while resultSet.Next():
-            colNum = resultSet.columnsNum
-            print('getString-col:', resultSet.getString(1))
-            print('getString-key:', resultSet.getString('PN'))
-            print('getInt-col:', resultSet.getInt(0))
-            print('getInt-key:', resultSet.getInt('ID'))
-            for i in range(colNum):
-                colN = resultSet.columnLabel(i)
-                colV = resultSet.getValue(i)
-                print(colN, ':', colV, 'colType:', resultSet.columnType(i), 'valueType:', resultSet.valueType(i))
-                print('columnLabel:', resultSet.columnLabel(i))
+            RevDic['name'] = resultSet.getString('GN')
+            RevDic['description'] = resultSet.getString('ED')
+            RevDic['unit'] = resultSet.getString('EU')
+            RevDic['valuetype'] = resultSet.getString('RT')
+            RevDic['tagID'] = resultSet.getString('ID')
+            RevDic['engHigh'] = resultSet.getString('TV')
+            RevDic['engLow'] = resultSet.getString('BV')
+            RevList.append(RevDic)
+
     except Exception as e:
         print('error:', e)
+
+
     finally:
         resultSet.close()  # 释放内存
-
+        # print(RevList)
     con.close()  # 关闭连接，千万不要忘记！！！
     print("Connect closed")
+    return RevList
 
 if __name__ == "__main__":
 
@@ -111,5 +113,7 @@ if __name__ == "__main__":
     WW_PASSWORD = 'openplant'
 
     # ServiceInfo()
-    TagGet()
+    # TagGet()
+    a = TagGet()
+    print(a)
     # print(Connected())

@@ -3,13 +3,15 @@ from Scripts.OPAPI_36 import *
 import time
 import _thread
 from datetime import datetime, timezone, timedelta
+from collections import OrderedDict
 
 app = Flask(__name__)
+# 数据库连接配置
 WW_HOST = '192.168.211.36'
 WW_PORT = 8200
 WW_TIMEOUT = 60
 WW_USER = 'sis'
-WW_PASSWORD = 'openplant1'
+WW_PASSWORD = 'openplant'
 
 
 @app.route('/')
@@ -92,7 +94,7 @@ def Tagindex(path):
     if path == 'Find':
         try:
             TagInfoList = TagFind()
-            return TagInfoList
+            return jsonify(TagInfoList)
         except Exception as e:
             print(e)
             return "Error processing Info", 500
@@ -107,12 +109,58 @@ def Tagindex(path):
         return 'Not Found', 404
 
 def TagFind():
-    return "Rev!"
+    # 接收配置信息
+    host = WW_HOST
+    port = WW_PORT
+    timeout = WW_TIMEOUT
+    user = WW_USER
+    password = WW_PASSWORD
+
+    con = Connect(host, port, timeout, user, password)
+    if con.isAlive():
+        print('Connected Successful')
+    else:
+        print("Connect Error")
+        return jsonify(False), 200
+
+    con = Connect(host, port, timeout, user, password)
+    # name description unit valuetype tagID engHigh engLow
+    # colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+
+    resultSet = con.executeQuery('select GN,ED,EU,RT,ID,TV,BV from Point')
+    RevList = []
+    try:
+        while resultSet.Next():
+            RevDic = {}
+            RevDic['name'] = resultSet.getString('GN')
+            RevDic['description'] = resultSet.getString('ED')
+            RevDic['unit'] = resultSet.getString('EU')
+            RevDic['valuetype'] = resultSet.getString('RT')
+            RevDic['tagID'] = resultSet.getString('ID')
+            RevDic['engHigh'] = resultSet.getString('TV')
+            RevDic['engLow'] = resultSet.getString('BV')
+            RevList.append(RevDic)
+    except Exception as e:
+        print('error:', e)
+    finally:
+        resultSet.close()  # 释放内存
+    con.close()  # 关闭连接，千万不要忘记！！！
+    print("Connect closed")
+    # print(RevList)
+    # 定义返回总数、开始下标、返回的主数据
+    beginIndex = 0
+    totalCount = len(RevList)
+    RevFList = OrderedDict([("totalCount", totalCount),("beginIndex", beginIndex),("tags", RevList)])
+
+    return RevFList
 
 def TagGet():
-    # 从查询字符串中获取所有键值对生成字典
-    TagDict = dict(request.args.items())
+    # 从查询字符串中获取所有key=name的值对生成字典
 
+    TagList = request.args.getlist('name')
+    # 判断如果name列表为空则返回提示
+    if len(TagList) == 0:
+        return jsonify('Please enter at least one tagname'), 200
     # 接收配置信息
     host=WW_HOST
     port=WW_PORT
@@ -127,50 +175,40 @@ def TagGet():
         print("Connect Error")
         return jsonify(False), 200
     tableName = 'Point'
-    # colNames=['ID','PN','ND','ED']
-    # keys=['1025']
-    colNames = ('ID', 'PN', 'ND', 'ED', 'EU')
-
-    keys = (1025, 1025)
-
+    # keys取GN（全局名称）列表
+    keys = TagList
+    # name description unit valuetype tagID engHigh engLow
+    colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+    # 定义返回的列表和字典
+    RevList = []
 
     resultSet = con.select(tableName, colNames, keys)
     try:
         while resultSet.Next():
-            colNum = resultSet.columnsNum
-            print('getString-col:', resultSet.getString(1))
-            print('getString-key:', resultSet.getString('PN'))
-            print('getInt-col:', resultSet.getInt(0))
-            print('getInt-key:', resultSet.getInt('ID'))
-            for i in range(colNum):
-                colN = resultSet.columnLabel(i)
-                colV = resultSet.getValue(i)
-                print(colN, ':', colV, 'colType:', resultSet.columnType(i), 'valueType:', resultSet.valueType(i))
-                print('columnLabel:', resultSet.columnLabel(i))
+            RevDic = {}
+            RevDic['name'] = resultSet.getString('GN')
+            RevDic['description'] = resultSet.getString('ED')
+            RevDic['unit'] = resultSet.getString('EU')
+            RevDic['valuetype'] = resultSet.getString('RT')
+            RevDic['tagID'] = resultSet.getString('ID')
+            RevDic['engHigh'] = resultSet.getString('TV')
+            RevDic['engLow'] = resultSet.getString('BV')
+            RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
     finally:
         resultSet.close()  # 释放内存
-
     con.close()  # 关闭连接，千万不要忘记！！！
     print("Connect closed")
+    # print(RevList)
+    return RevList
 
-
-    return "Rev!"
 
 
 
 
 
 if __name__ == '__main__':
-
-    #连接配置
-    # WW_HOST = '192.168.211.36'
-    # WW_PORT = 8200
-    # WW_TIMEOUT = 60
-    # WW_USER = 'sis'
-    # WW_PASSWORD = 'openplant1'
-
 
 
     app.run()
