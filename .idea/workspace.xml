@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0c9b7559-e514-48a9-b065-27e34392fa6a" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-    </list>
+    <list default="true" id="0c9b7559-e514-48a9-b065-27e34392fa6a" name="更改" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -202,7 +199,7 @@
       <workItem from="1737027951046" duration="1420000" />
       <workItem from="1737033004520" duration="867000" />
       <workItem from="1737035477263" duration="409000" />
-      <workItem from="1737074533767" duration="12875000" />
+      <workItem from="1737074533767" duration="12951000" />
     </task>
     <task id="LOCAL-00001" summary="服务器信息查询&#10;服务器连接状态">
       <option name="closed" value="true" />
@@ -244,7 +241,15 @@
       <option name="project" value="LOCAL" />
       <updated>1737084583693</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="snapshot">
+      <option name="closed" value="true" />
+      <created>1737087768474</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1737087768474</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -265,7 +270,8 @@
     <MESSAGE value="服务器信息查询&#10;服务器连接状态" />
     <MESSAGE value="查询位号名称属性" />
     <MESSAGE value="tagget&#10;tagfind" />
-    <option name="LAST_COMMIT_MESSAGE" value="tagget&#10;tagfind" />
+    <MESSAGE value="snapshot" />
+    <option name="LAST_COMMIT_MESSAGE" value="snapshot" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/LinkByFlask$Flask__app2_py_.coverage" NAME="Flask (app2.py) 覆盖结果" MODIFIED="1737080452758" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
