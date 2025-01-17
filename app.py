@@ -178,7 +178,7 @@ def TagGet():
     # keys取GN（全局名称）列表
     keys = TagList
     # name description unit valuetype tagID engHigh engLow
-    colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+    colNames = ('GN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
     # 定义返回的列表和字典
     RevList = []
 
@@ -203,9 +203,107 @@ def TagGet():
     # print(RevList)
     return RevList
 
+@app.route('/Data/<path>', methods=['GET'])
+def Dataindex(path):
+    if path == 'SnapShot':
+        try:
+            RevInfo = SnapShot()
+            return jsonify(RevInfo)
+        except Exception as e:
+            print(e)
+            return "Error processing Info", 500
+    elif path == 'HisValue':
+        try:
+            RevInfo = HisValue()
+            return RevInfo
+        except Exception as e:
+            print(e)
+            return "Error processing Connected", 500
+    elif path == 'RawHisValue':
+        try:
+            RevInfo = RawHisValue()
+            return RevInfo
+        except Exception as e:
+            print(e)
+            return "Error processing Connected", 500
+    elif path == 'InterpolatedHisValue':
+        try:
+            RevInfo = InterpolatedHisValue()
+            return RevInfo
+        except Exception as e:
+            print(e)
+            return "Error processing Connected", 500
+    elif path == 'HisStaticalValue':
+        try:
+            RevInfo = HisStaticalValue()
+            return RevInfo
+        except Exception as e:
+            print(e)
+            return "Error processing Connected", 500
+    else:
+        return 'Not Found', 404
 
+def SnapShot():
+    # 从查询字符串中获取所有key=name的值对生成字典
 
+    TagList = request.args.getlist('name')
+    # 判断如果name列表为空则返回提示
+    if len(TagList) == 0:
+        return jsonify('Please enter at least one tagname'), 200
+    # 接收配置信息
+    host = WW_HOST
+    port = WW_PORT
+    timeout = WW_TIMEOUT
+    user = WW_USER
+    password = WW_PASSWORD
 
+    con = Connect(host, port, timeout, user, password)
+    if con.isAlive():
+        print('Connected Successful')
+    else:
+        print("Connect Error")
+        return jsonify(False), 200
+    tableName = 'Realtime'
+    # keys取GN（全局名称）列表
+    keys = TagList
+    # name result timeStamp status value
+    colNames = ('GN', 'ID', 'TM', 'DS', 'AV')
+    # 定义返回的列表和字典
+    RevList = []
+
+    resultSet = con.select(tableName, colNames, keys)
+    try:
+        while resultSet.Next():
+            RevDic = {}
+            RevDic['name'] = resultSet.getString('GN')
+            RevDic['result'] = resultSet.getString('ID')
+            RevDic['timeStamp'] = resultSet.getString('TM')
+            RevDic['status'] = resultSet.getString('DS')
+            RevDic['value'] = resultSet.getString('AV')
+
+            RevList.append(RevDic)
+    except Exception as e:
+        print('error:', e)
+    finally:
+        resultSet.close()  # 释放内存
+    con.close()  # 关闭连接，千万不要忘记！！！
+    print("Connect closed")
+    # print(RevList)
+    return RevList
+    # return 'SnapShot',200
+
+def HisValue():
+
+    return 'HisValue', 200
+def RawHisValue():
+
+    return 'RawHisValue', 200
+def InterpolatedHisValue():
+
+    return 'InterpolatedHisValue', 200
+def HisStaticalValue():
+
+    return 'HisStaticalValue', 200
 
 
 if __name__ == '__main__':
