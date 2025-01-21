@@ -4,16 +4,23 @@ import time
 import _thread
 from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
+from config import DB_CONFIG, APP_CONFIG  # 导入配置
+from typing import Tuple  # 添加这行导入
 
 app = Flask(__name__)
-# 数据库连接配置
-WW_HOST = '192.168.211.36'
-WW_PORT = 8200
-WW_TIMEOUT = 60
-WW_USER = 'sis'
-WW_PASSWORD = 'openplant'
 
 
+def try_parse_time(ts: str) -> Tuple[bool, datetime]:
+    if ts is None:
+        return False, datetime.min
+    # 尝试转换
+    try:
+        to = parser.parse(ts, fuzzy=False)
+        return True, to
+    except ValueError:
+        return False, datetime.min
+    
+    
 @app.route('/')
 def hello_world():
     return 'Cybstar.MagusDataLink by yilangli@cybstar.com'
@@ -52,7 +59,7 @@ def ServiceInfo():
         os_version = platform.version()
         os_release = platform.release()
 
-        serverOS = f"Microsoft {os_name} {os_release} {os_version}"
+        serverOS = f"{os_name} {os_release} {os_version}"
 
         # 获取当前服务器时间，并转换为本地时间
         current_time = datetime.now()
@@ -61,7 +68,7 @@ def ServiceInfo():
 
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}, 500
 
     Info_dic = {
         "name": name,
@@ -69,18 +76,18 @@ def ServiceInfo():
         "serverTime": formatted_time
     }
 
-    return jsonify(Info_dic), 200
+    return Info_dic
 
 def Connected():
-    # 接收配置信息
-    host=WW_HOST
-    port=WW_PORT
-    timeout=WW_TIMEOUT
-    user=WW_USER
-    password=WW_PASSWORD
+    # 从配置中获取连接信息
+    host = DB_CONFIG['HOST']
+    port = DB_CONFIG['PORT']
+    timeout = DB_CONFIG['TIMEOUT']
+    user = DB_CONFIG['USER']
+    password = DB_CONFIG['PASSWORD']
 
     try:
-        con=Connect(host,port,timeout,user,password)
+        con = Connect(host, port, timeout, user, password)
         if con.isAlive():
             return jsonify(True), 200
         else:
@@ -109,19 +116,19 @@ def Tagindex(path):
         return 'Not Found', 404
 
 def TagFind():
-    # 接收配置信息
-    host = WW_HOST
-    port = WW_PORT
-    timeout = WW_TIMEOUT
-    user = WW_USER
-    password = WW_PASSWORD
+    # 从配置中获取连接信息
+    host = DB_CONFIG['HOST']
+    port = DB_CONFIG['PORT']
+    timeout = DB_CONFIG['TIMEOUT']
+    user = DB_CONFIG['USER']
+    password = DB_CONFIG['PASSWORD']
 
     con = Connect(host, port, timeout, user, password)
     if con.isAlive():
         print('Connected Successful')
     else:
         print("Connect Error")
-        return jsonify(False), 200
+        return jsonify(False), 400
 
     con = Connect(host, port, timeout, user, password)
     # name description unit valuetype tagID engHigh engLow
@@ -159,21 +166,21 @@ def TagGet():
 
     TagList = request.args.getlist('name')
     # 判断如果name列表为空则返回提示
-    if len(TagList) == 0:
-        return jsonify('Please enter at least one tagname'), 200
-    # 接收配置信息
-    host=WW_HOST
-    port=WW_PORT
-    timeout=WW_TIMEOUT
-    user=WW_USER
-    password=WW_PASSWORD
+    if tag_name is None or len(tag_name) <= 0:
+        return make_response('未指定位号', 400)
+    # 从配置中获取连接信息
+    host = DB_CONFIG['HOST']
+    port = DB_CONFIG['PORT']
+    timeout = DB_CONFIG['TIMEOUT']
+    user = DB_CONFIG['USER']
+    password = DB_CONFIG['PASSWORD']
 
     con = Connect(host, port, timeout, user, password)
     if con.isAlive():
         print('Connected Successful')
     else:
         print("Connect Error")
-        return jsonify(False), 200
+        return jsonify(False), 400
     tableName = 'Point'
     # keys取GN（全局名称）列表
     keys = TagList
@@ -250,12 +257,12 @@ def SnapShot():
     # 判断如果name列表为空则返回提示
     if len(TagList) == 0:
         return jsonify('Please enter at least one tagname'), 200
-    # 接收配置信息
-    host = WW_HOST
-    port = WW_PORT
-    timeout = WW_TIMEOUT
-    user = WW_USER
-    password = WW_PASSWORD
+    # 从配置中获取连接信息
+    host = DB_CONFIG['HOST']
+    port = DB_CONFIG['PORT']
+    timeout = DB_CONFIG['TIMEOUT']
+    user = DB_CONFIG['USER']
+    password = DB_CONFIG['PASSWORD']
 
     con = Connect(host, port, timeout, user, password)
     if con.isAlive():
@@ -306,6 +313,7 @@ def HisStaticalValue():
 
 
 if __name__ == '__main__':
-
-
-    app.run()
+    app.run(
+        host=APP_CONFIG['HOST'], 
+        port=APP_CONFIG['PORT']
+    )
