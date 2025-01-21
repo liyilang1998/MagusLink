@@ -10,5 +10,5 @@ DB_CONFIG = {
 # Flask应用配置
 APP_CONFIG = {
     'HOST': '0.0.0.0',
-    'PORT': 5002
+    'PORT': 9201
 } 

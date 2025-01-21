@@ -6,27 +6,15 @@ from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
 from config import DB_CONFIG, APP_CONFIG  # 导入配置
 from typing import Tuple
+import platform
 
 app = Flask(__name__)
 app.json.sort_keys = False  # 防止 Flask 自动排序 JSON 键
-
-
-# def try_parse_time(ts: str) -> Tuple[bool, datetime]:
-#     if ts is None:
-#         return False, datetime.min
-#     # 尝试转换
-#     try:
-#         to = parser.parse(ts, fuzzy=False)
-#         return True, to
-#     except ValueError:
-#         return False, datetime.min
-    
     
 @app.route('/')
 def hello_world():
     return 'Cybstar.MagusDataLink by yilangli@cybstar.com'
 
-# @app.route('/Service/Info',methods=['GET'])
 @app.route('/Service/<path>', methods=['GET'])
 def Svrindex(path):
     if path == 'Info':
@@ -53,34 +41,25 @@ def Svrindex(path):
 def ServiceInfo():
     # 定义接口名称
     name = "UnifyDataAPI.Magus"
-
-    # 初始化变量以避免未定义的错误
     serverOS = ""
     formatted_time = ""
-
     try:
-        # 获取操作系统名称和版本
+        # 获取操作系统信息
         os_name = platform.system()
         os_version = platform.version()
         os_release = platform.release()
-
         serverOS = f"{os_name} {os_release} {os_version}"
-
         # 获取当前服务器时间，并转换为本地时间
         current_time = datetime.now()
-        current_time_with_tz = current_time.astimezone(timezone(timedelta(hours=8)))
-        formatted_time = current_time_with_tz.isoformat()
-
+        formatted_time = format_datetime_with_timezone(current_time)
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
-
     Info_dic = OrderedDict([
         ("name", name),
         ("serverOS", serverOS),
         ("serverTime", formatted_time)
     ])
-
     return jsonify(Info_dic), 200
 
 def Connected():
@@ -101,7 +80,6 @@ def ServiceSupport():
         ("readRawHis", "UnKnow"),
         ("readHisStatics", "UnKnow")
     ])
-    
     return jsonify(support_dic), 200
 
 @app.route('/Tag/<path>', methods=['GET'])
@@ -128,7 +106,6 @@ def TagFind():
     name_filter = request.args.get('Name', default='')
     desc_filter = request.args.get('Description', default='')
     vt_filter = request.args.get('vt', default='')
-    
     try:
         with MagusCon() as con:
             # 构建SQL查询语句
@@ -141,12 +118,10 @@ def TagFind():
                 where_conditions.append(f"ED LIKE '%{desc_filter}%'")
             if vt_filter:
                 where_conditions.append(f"RT = '{vt_filter}'")
-                
             # 拼接WHERE条件
             where_clause = ''
             if where_conditions:
                 where_clause = ' WHERE ' + ' AND '.join(where_conditions)
-            
             # 执行查询
             query = base_query + where_clause
             print(f"Executing query: {query}")
@@ -156,30 +131,31 @@ def TagFind():
             items_added = 0
             totalCount = 0  # 用于计算总记录数
             
-            while resultSet.Next():
-                totalCount += 1  # 计算总记录数
-                
-                # 只有当当前索引大于等于 from_index 时才考虑添加数据
-                if current_index >= from_index:
-                    # 如果没有指定count或者还没有达到指定的数量，则添加数据
-                    if count <= 0 or items_added < count:
-                        RevDic = OrderedDict([
-                            ('name', resultSet.getString('GN')),
-                            ('description', resultSet.getString('ED')),
-                            ('unit', resultSet.getString('EU')),
-                            ('valuetype', resultSet.getString('RT')),
-                            ('tagID', resultSet.getString('ID')),
-                            ('engHigh', resultSet.getString('TV')),
-                            ('engLow', resultSet.getString('BV'))
-                        ])
-                        RevList.append(RevDic)
-                        items_added += 1
-                current_index += 1
-                
-                # 如果已经获取到足够的数据，继续遍历以获取总数
-                if count > 0 and items_added >= count:
-                    # 不要 break，继续计算总数
-                    continue
+            try:
+                while resultSet.Next():
+                    totalCount += 1  # 计算总记录数
+                    # 只有当当前索引大于等于 from_index 时才考虑添加数据
+                    if current_index >= from_index:
+                        # 如果没有指定count或者还没有达到指定的数量，则添加数据
+                        if count <= 0 or items_added < count:
+                            RevDic = OrderedDict([
+                                ('name', resultSet.getString('GN')),
+                                ('description', resultSet.getString('ED')),
+                                ('unit', resultSet.getString('EU')),
+                                ('valuetype', resultSet.getString('RT')),
+                                ('tagID', resultSet.getString('ID')),
+                                ('engHigh', resultSet.getString('TV')),
+                                ('engLow', resultSet.getString('BV'))
+                            ])
+                            RevList.append(RevDic)
+                            items_added += 1
+                    current_index += 1
+                    # 如果已经获取到足够的数据，继续遍历以获取总数
+                    if count > 0 and items_added >= count:
+                        # 不要 break，继续计算总数
+                        continue
+            finally:
+                resultSet.close()  # 确保 resultSet 被关闭
                 
     except Exception as e:
         print(f"Error: {e}")
@@ -203,46 +179,32 @@ def TagGet():
     if TagList is None or len(TagList) <= 0:
         return jsonify({"error": "未指定位号"}), 400
     
-    # 从配置中获取连接信息
-    host = DB_CONFIG['HOST']
-    port = DB_CONFIG['PORT']
-    timeout = DB_CONFIG['TIMEOUT']
-    user = DB_CONFIG['USER']
-    password = DB_CONFIG['PASSWORD']
-
-    con = Connect(host, port, timeout, user, password)
-    if con.isAlive():
-        print('Connected Successful')
-    else:
-        print("Connect Error")
-        return jsonify(False), 400
-        
-    tableName = 'Point'
-    keys = TagList
-    colNames = ('GN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
-    RevList = []
-
-    resultSet = con.select(tableName, colNames, keys)
     try:
-        while resultSet.Next():
-            # 使用 OrderedDict 确保字段顺序
-            RevDic = OrderedDict([
-                ('name', resultSet.getValue('GN')),
-                ('description', resultSet.getValue('ED')),
-                ('unit', resultSet.getValue('EU')),
-                ('valuetype', resultSet.getValue('RT')),
-                ('tagID', resultSet.getValue('ID')),
-                ('engHigh', resultSet.getValue('TV')),
-                ('engLow', resultSet.getValue('BV'))
-            ])
-            RevList.append(RevDic)
+        with MagusCon() as con:
+            tableName = 'Point'
+            keys = TagList
+            colNames = ('GN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
+            RevList = []
+
+            resultSet = con.select(tableName, colNames, keys)
+            try:
+                while resultSet.Next():
+                    RevDic = OrderedDict([
+                        ('name', resultSet.getValue('GN')),
+                        ('description', resultSet.getValue('ED')),
+                        ('unit', resultSet.getValue('EU')),
+                        ('valuetype', resultSet.getValue('RT')),
+                        ('tagID', resultSet.getValue('ID')),
+                        ('engHigh', resultSet.getValue('TV')),
+                        ('engLow', resultSet.getValue('BV'))
+                    ])
+                    RevList.append(RevDic)
+            finally:
+                resultSet.close()  # 确保 resultSet 被关闭
     except Exception as e:
-        print('error:', e)
-    finally:
-        resultSet.close()  # 释放内存
-    con.close()  # 关闭连接，千万不要忘记！！！
-    print("Connect closed")
-    
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
     return jsonify(RevList), 200
 
 @app.route('/Data/<path>', methods=['GET', 'POST'])  # 添加 POST 方法
@@ -312,38 +274,32 @@ def SnapShot(post_tags=None):
             resultSet = con.select(tableName, colNames, TagList)
             
             RevList = []
-            while resultSet.Next():
-                # 获取时间（datetime）并转换格式
-                timestamp = resultSet.getDateTime('TM')
-                
-                # 处理 name 和 result
-                name = resultSet.getValue('GN')
-                result = 0 if name and name.strip() else 1
-                
-                # 处理 status
-                status_value = resultSet.getString('DS')
-                # print(f"{name}-status_value:", status_value, type(status_value))
-                status = "192" if status_value == "0" else "-1"
-                
-                try:
-                    # 转换为北京时间并格式化
-                    dt_beijing = timestamp.astimezone(timezone(timedelta(hours=8)))
-                    formatted_time = dt_beijing.isoformat()
-                except (ValueError, TypeError, AttributeError):
-                    # 如果转换失败，尝试使用当前时间
-                    current_time = datetime.now()
-                    dt_beijing = current_time.astimezone(timezone(timedelta(hours=8)))
-                    formatted_time = dt_beijing.isoformat()
-                
-                # 使用 OrderedDict 确保字段顺序
-                RevDic = OrderedDict([
-                    ('name', name),
-                    ('result', result),
-                    ('timeStamp', formatted_time),
-                    ('status', status),
-                    ('value', resultSet.getString('AV'))
-                ])
-                RevList.append(RevDic)
+            try:
+                while resultSet.Next():
+                    # 获取时间（datetime）并转换格式
+                    timestamp = resultSet.getDateTime('TM')
+                    
+                    # 处理 name 和 result
+                    name = resultSet.getValue('GN')
+                    result = 0 if name and name.strip() else 1
+                    
+                    # 处理 status
+                    status_value = resultSet.getString('DS')
+                    status = "192" if status_value == "0" else "-1"
+                    
+                    formatted_time = format_datetime_with_timezone(timestamp)
+                    
+                    # 使用 OrderedDict 确保字段顺序
+                    RevDic = OrderedDict([
+                        ('name', name),
+                        ('result', result),
+                        ('timeStamp', formatted_time),
+                        ('status', status),
+                        ('value', resultSet.getString('AV'))
+                    ])
+                    RevList.append(RevDic)
+            finally:
+                resultSet.close()  # 确保 resultSet 被关闭
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -367,67 +323,45 @@ def HisValue():
     except ValueError as e:
         return jsonify({"error": "时间格式无效"}), 400
     
-    # 从配置中获取连接信息
-    host = DB_CONFIG['HOST']
-    port = DB_CONFIG['PORT']
-    timeout = DB_CONFIG['TIMEOUT']
-    user = DB_CONFIG['USER']
-    password = DB_CONFIG['PASSWORD']
-
-    con = Connect(host, port, timeout, user, password)
-    if con.isAlive():
-        print('Connected Successful')
-    else:
-        print("Connect Error")
-        return jsonify(False), 400
-    
-    tableName = 'Archive'  # 历史数据表名
-    keys = TagList
-    colNames = ('GN', 'ID', 'TM', 'DS', 'AV')  # 与实时数据相同的列
-    RevList = []
-
-    # 使用指定时间查询历史数据
-    resultSet = con.select(tableName, colNames, keys, query_time)
-    
     try:
-        while resultSet.Next():
-            # 获取时间并转换格式
-            timestamp = resultSet.getDateTime('TM')
-            
-            # 处理 name 和 result
-            name = resultSet.getValue('GN')
-            result = 0 if name and name.strip() else 1
-            
-            # 处理 status
-            status_value = resultSet.getString('DS')
-            status = "192" if status_value == "0" else "-1"
-            
+        with MagusCon() as con:
+            tableName = 'History'  # 历史数据表名
+            keys = TagList
+            colNames = ('GN', 'ID', 'TM', 'DS', 'AV')  # 与实时数据相同的列
+            RevList = []
+
+            # 使用指定时间查询历史数据
+            resultSet = con.select(tableName, colNames, keys, query_time)
             try:
-                # 转换为北京时间并格式化
-                dt_beijing = timestamp.astimezone(timezone(timedelta(hours=8)))
-                formatted_time = dt_beijing.isoformat()
-            except (ValueError, TypeError, AttributeError):
-                # 如果转换失败，使用查询时间
-                dt_beijing = query_time.astimezone(timezone(timedelta(hours=8)))
-                formatted_time = dt_beijing.isoformat()
-            
-            # 使用 OrderedDict 确保字段顺序
-            RevDic = OrderedDict([
-                ('name', name),
-                ('result', result),
-                ('timeStamp', formatted_time),
-                ('status', status),
-                ('value', resultSet.getString('AV'))
-            ])
-            RevList.append(RevDic)
-            
+                while resultSet.Next():
+                    # 获取时间并转换格式
+                    timestamp = resultSet.getDateTime('TM')
+                    
+                    # 处理 name 和 result
+                    name = resultSet.getValue('GN')
+                    result = 0 if name and name.strip() else 1
+                    
+                    # 处理 status
+                    status_value = resultSet.getString('DS')
+                    status = "192" if status_value == "0" else "-1"
+                    
+                    formatted_time = format_datetime_with_timezone(timestamp, query_time)
+                    
+                    # 使用 OrderedDict 确保字段顺序
+                    RevDic = OrderedDict([
+                        ('name', name),
+                        ('result', result),
+                        ('timeStamp', formatted_time),
+                        ('status', status),
+                        ('value', resultSet.getString('AV'))
+                    ])
+                    RevList.append(RevDic)
+            finally:
+                resultSet.close()  # 确保 resultSet 被关闭
+                
     except Exception as e:
-        print('error:', e)
-        return jsonify({"error": "Invalid Tags or Time"}), 400
-    finally:
-        resultSet.close()
-        con.close()
-        print("Connect closed")
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
     return jsonify(RevList), 200
 
@@ -440,6 +374,38 @@ def InterpolatedHisValue():
 def HisStaticalValue():
 
     return 'HisStaticalValue', 200
+
+def format_datetime_with_timezone(timestamp, default_time=None):
+    """
+    将时间戳转换为带时区的ISO格式字符串
+    
+    Args:
+        timestamp: datetime对象或可转换为datetime的值
+        default_time: 当转换失败时使用的默认时间
+    
+    Returns:
+        str: 格式化的时间字符串 (例如: "2025-01-21T13:33:43.908+08:00")
+    """
+    try:
+        if isinstance(timestamp, datetime):
+            dt = timestamp
+        else:
+            dt = datetime.fromtimestamp(float(timestamp))
+        
+        # 转换为北京时间并格式化
+        dt_beijing = dt.astimezone(timezone(timedelta(hours=8)))
+        return dt_beijing.isoformat()
+    except (ValueError, TypeError, AttributeError) as e:
+        print(f"Time format error: {e}")
+        if default_time:
+            # 如果提供了默认时间，使用默认时间
+            dt_beijing = default_time.astimezone(timezone(timedelta(hours=8)))
+            return dt_beijing.isoformat()
+        else:
+            # 如果没有提供默认时间，使用当前时间
+            current_time = datetime.now()
+            dt_beijing = current_time.astimezone(timezone(timedelta(hours=8)))
+            return dt_beijing.isoformat()
 
 class MagusCon:
     def __init__(self):
