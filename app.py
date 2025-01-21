@@ -5,9 +5,10 @@ import _thread
 from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
 from config import DB_CONFIG, APP_CONFIG  # 导入配置
-from typing import Tuple  # 添加这行导入
+from typing import Tuple
 
 app = Flask(__name__)
+app.json.sort_keys = False  # 防止 Flask 自动排序 JSON 键
 
 
 def try_parse_time(ts: str) -> Tuple[bool, datetime]:
@@ -42,6 +43,13 @@ def Svrindex(path):
         except Exception as e:
             print(e)
             return "Error processing Connected", 500
+    elif path == 'Support':  # 添加新的路由处理
+        try:
+            support = ServiceSupport()
+            return jsonify(support), 200
+        except Exception as e:
+            print(e)
+            return "Error processing Support", 500
     else:
         return 'Not Found', 404
 
@@ -68,13 +76,13 @@ def ServiceInfo():
 
     except Exception as e:
         print(f"Error: {e}")
-        return {"error": str(e)}, 500
+        return OrderedDict([("error", str(e))]), 500
 
-    Info_dic = {
-        "name": name,
-        "serverOS": serverOS,
-        "serverTime": formatted_time
-    }
+    Info_dic = OrderedDict([
+        ("name", name),
+        ("serverOS", serverOS),
+        ("serverTime", formatted_time)
+    ])
 
     return Info_dic
 
@@ -89,12 +97,25 @@ def Connected():
     try:
         con = Connect(host, port, timeout, user, password)
         if con.isAlive():
-            return jsonify(True), 200
+            return True
         else:
-            return jsonify(False), 200
+            return False
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return OrderedDict([("error", str(e))]), 500
+    
+def ServiceSupport():
+    # 后续更新
+    support_dic = OrderedDict([
+        ("browseTag", "UnKnow"),
+        ("readTag", "UnKnow"),
+        ("writeTag", "UnKnow"),
+        ("interpolateHis", "UnKnow"),
+        ("readRawHis", "UnKnow"),
+        ("readHisStatics", "UnKnow")
+    ])
+    
+    return support_dic
 
 @app.route('/Tag/<path>', methods=['GET'])
 def Tagindex(path):
@@ -108,7 +129,7 @@ def Tagindex(path):
     elif path == 'Get':
         try:
             TagInfo = TagGet()
-            return TagInfo
+            return jsonify(TagInfo), 200
         except Exception as e:
             print(e)
             return "Error processing Connected", 500
@@ -116,6 +137,13 @@ def Tagindex(path):
         return 'Not Found', 404
 
 def TagFind():
+    # 获取查询参数
+    from_index = request.args.get('From', type=int, default=0)  # 默认从0开始
+    count = request.args.get('Count', type=int, default=0)      # 默认返回所有
+    name_filter = request.args.get('Name', default='')          # 名称过滤
+    desc_filter = request.args.get('Description', default='')   # 描述过滤
+    vt_filter = request.args.get('vt', default='')             # 值类型过滤
+    
     # 从配置中获取连接信息
     host = DB_CONFIG['HOST']
     port = DB_CONFIG['PORT']
@@ -130,44 +158,84 @@ def TagFind():
         print("Connect Error")
         return jsonify(False), 400
 
-    con = Connect(host, port, timeout, user, password)
-    # name description unit valuetype tagID engHigh engLow
-    # colNames = ('PN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
-
-    resultSet = con.executeQuery('select GN,ED,EU,RT,ID,TV,BV from Point')
+    # 构建SQL查询语句
+    base_query = 'SELECT GN,ED,EU,RT,ID,TV,BV FROM Point'
+    where_conditions = []
+    
+    if name_filter:
+        where_conditions.append(f"GN LIKE '%{name_filter}%'")
+    if desc_filter:
+        where_conditions.append(f"ED LIKE '%{desc_filter}%'")
+    if vt_filter:
+        where_conditions.append(f"RT = '{vt_filter}'")
+        
+    # 拼接WHERE条件
+    where_clause = ''
+    if where_conditions:
+        where_clause = ' WHERE ' + ' AND '.join(where_conditions)
+    
+    # 先获取总数
+    count_query = f'SELECT COUNT(*) as total FROM Point{where_clause}'
+    resultSet = con.executeQuery(count_query)
+    totalCount = 0
+    if resultSet.Next():
+        totalCount = resultSet.getInt('total')
+    # resultSet.close()
+    
+    # 执行主查询
+    query = base_query + where_clause
+    print(f"Executing query: {query}")
+    resultSet = con.executeQuery(query)
     RevList = []
+    current_index = 0
+    items_added = 0
+    
     try:
         while resultSet.Next():
-            RevDic = {}
-            RevDic['name'] = resultSet.getString('GN')
-            RevDic['description'] = resultSet.getString('ED')
-            RevDic['unit'] = resultSet.getString('EU')
-            RevDic['valuetype'] = resultSet.getString('RT')
-            RevDic['tagID'] = resultSet.getString('ID')
-            RevDic['engHigh'] = resultSet.getString('TV')
-            RevDic['engLow'] = resultSet.getString('BV')
-            RevList.append(RevDic)
+            # 只有当当前索引大于等于 from_index 时才考虑添加数据
+            if current_index >= from_index:
+                # 如果没有指定count或者还没有达到指定的数量，则添加数据
+                if count <= 0 or items_added < count:
+                    RevDic = OrderedDict([
+                        ('name', resultSet.getString('GN')),
+                        ('description', resultSet.getString('ED')),
+                        ('unit', resultSet.getString('EU')),
+                        ('valuetype', resultSet.getString('RT')),
+                        ('tagID', resultSet.getString('ID')),
+                        ('engHigh', resultSet.getString('TV')),
+                        ('engLow', resultSet.getString('BV'))
+                    ])
+                    RevList.append(RevDic)
+                    items_added += 1
+                elif items_added >= count:
+                    # 如果已经达到指定数量，可以提前退出循环
+                    break
+            current_index += 1
     except Exception as e:
         print('error:', e)
     finally:
         resultSet.close()  # 释放内存
-    con.close()  # 关闭连接，千万不要忘记！！！
+    con.close()  # 关闭连接
     print("Connect closed")
-    # print(RevList)
-    # 定义返回总数、开始下标、返回的主数据
-    beginIndex = 0
-    totalCount = len(RevList)
-    RevFList = OrderedDict([("totalCount", totalCount),("beginIndex", beginIndex),("tags", RevList)])
+
+    # 计算实际的起始索引
+    beginIndex = min(from_index, totalCount)
+    
+    RevFList = OrderedDict([
+        ("totalCount", totalCount),
+        ("beginIndex", beginIndex),
+        ("tags", RevList)
+    ])
 
     return RevFList
 
 def TagGet():
     # 从查询字符串中获取所有key=name的值对生成字典
-
     TagList = request.args.getlist('name')
     # 判断如果name列表为空则返回提示
-    if tag_name is None or len(tag_name) <= 0:
-        return make_response('未指定位号', 400)
+    if TagList is None or len(TagList) <= 0:
+        return '未指定位号'
+    
     # 从配置中获取连接信息
     host = DB_CONFIG['HOST']
     port = DB_CONFIG['PORT']
@@ -181,25 +249,25 @@ def TagGet():
     else:
         print("Connect Error")
         return jsonify(False), 400
+        
     tableName = 'Point'
-    # keys取GN（全局名称）列表
     keys = TagList
-    # name description unit valuetype tagID engHigh engLow
     colNames = ('GN', 'ED', 'EU', 'RT', 'ID', 'TV', 'BV')
-    # 定义返回的列表和字典
     RevList = []
 
     resultSet = con.select(tableName, colNames, keys)
     try:
         while resultSet.Next():
-            RevDic = {}
-            RevDic['name'] = resultSet.getValue('GN')
-            RevDic['description'] = resultSet.getValue('ED')
-            RevDic['unit'] = resultSet.getValue('EU')
-            RevDic['valuetype'] = resultSet.getValue('RT')
-            RevDic['tagID'] = resultSet.getValue('ID')
-            RevDic['engHigh'] = resultSet.getValue('TV')
-            RevDic['engLow'] = resultSet.getValue('BV')
+            # 使用 OrderedDict 确保字段顺序
+            RevDic = OrderedDict([
+                ('name', resultSet.getValue('GN')),
+                ('description', resultSet.getValue('ED')),
+                ('unit', resultSet.getValue('EU')),
+                ('valuetype', resultSet.getValue('RT')),
+                ('tagID', resultSet.getValue('ID')),
+                ('engHigh', resultSet.getValue('TV')),
+                ('engLow', resultSet.getValue('BV'))
+            ])
             RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
@@ -207,7 +275,7 @@ def TagGet():
         resultSet.close()  # 释放内存
     con.close()  # 关闭连接，千万不要忘记！！！
     print("Connect closed")
-    # print(RevList)
+    
     return RevList
 
 @app.route('/Data/<path>', methods=['GET'])
@@ -281,12 +349,14 @@ def SnapShot():
     resultSet = con.select(tableName, colNames, keys)
     try:
         while resultSet.Next():
-            RevDic = {}
-            RevDic['name'] = resultSet.getValue('GN')
-            RevDic['result'] = resultSet.getValue('ID')
-            RevDic['timeStamp'] = resultSet.getValue('TM')
-            RevDic['status'] = resultSet.getValue('DS')
-            RevDic['value'] = resultSet.getValue('AV')
+            # 使用 OrderedDict 确保字段顺序
+            RevDic = OrderedDict([
+                ('name', resultSet.getValue('GN')),
+                ('result', resultSet.getValue('ID')),
+                ('timeStamp', resultSet.getValue('TM')),
+                ('status', resultSet.getValue('DS')),
+                ('value', resultSet.getValue('AV'))
+            ])
             RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
@@ -310,6 +380,7 @@ def InterpolatedHisValue():
 def HisStaticalValue():
 
     return 'HisStaticalValue', 200
+
 
 
 if __name__ == '__main__':
