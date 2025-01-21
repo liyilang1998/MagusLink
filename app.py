@@ -4,7 +4,7 @@ import time
 import _thread
 from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
-from config import DB_CONFIG, APP_CONFIG  # 导入配置
+from config import DB_CONFIG, APP_CONFIG, VALUE_TYPE_MAP  # 导入配置和值类型映射
 from typing import Tuple
 import platform
 
@@ -99,6 +99,16 @@ def Tagindex(path):
     else:
         return jsonify({"error": "Not Found"}), 404
 
+def get_value_type(type_code):
+    """
+    将数值类型代码转换为对应的类型名称
+    Args:
+        type_code: 类型代码（字符串或数字）
+    Returns:
+        str: 类型名称，如果没有匹配则返回 'Unknown'
+    """
+    return VALUE_TYPE_MAP.get(str(type_code), 'Unknown')
+
 def TagFind():
     # 获取查询参数
     from_index = request.args.get('From', type=int, default=0)
@@ -130,7 +140,6 @@ def TagFind():
             current_index = 0
             items_added = 0
             totalCount = 0  # 用于计算总记录数
-            
             try:
                 while resultSet.Next():
                     totalCount += 1  # 计算总记录数
@@ -142,7 +151,7 @@ def TagFind():
                                 ('name', resultSet.getString('GN')),
                                 ('description', resultSet.getString('ED')),
                                 ('unit', resultSet.getString('EU')),
-                                ('valuetype', resultSet.getString('RT')),
+                                ('valuetype', get_value_type(resultSet.getString('RT'))),
                                 ('tagID', resultSet.getString('ID')),
                                 ('engHigh', resultSet.getString('TV')),
                                 ('engLow', resultSet.getString('BV'))
@@ -193,7 +202,7 @@ def TagGet():
                         ('name', resultSet.getValue('GN')),
                         ('description', resultSet.getValue('ED')),
                         ('unit', resultSet.getValue('EU')),
-                        ('valuetype', resultSet.getValue('RT')),
+                        ('valuetype', get_value_type(resultSet.getValue('RT'))),
                         ('tagID', resultSet.getValue('ID')),
                         ('engHigh', resultSet.getValue('TV')),
                         ('engLow', resultSet.getValue('BV'))
@@ -378,11 +387,9 @@ def HisStaticalValue():
 def format_datetime_with_timezone(timestamp, default_time=None):
     """
     将时间戳转换为带时区的ISO格式字符串
-    
     Args:
         timestamp: datetime对象或可转换为datetime的值
         default_time: 当转换失败时使用的默认时间
-    
     Returns:
         str: 格式化的时间字符串 (例如: "2025-01-21T13:33:43.908+08:00")
     """

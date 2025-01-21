@@ -11,4 +11,17 @@ DB_CONFIG = {
 APP_CONFIG = {
     'HOST': '0.0.0.0',
     'PORT': 9201
+}
+
+# 值类型映射关系
+VALUE_TYPE_MAP = {
+    '0': 'AX',#'AX'
+    '1': 'DX',#'DX'
+    '2': '2',#'Int16'
+    '3': '3',#'Int32'
+    '4': '4',#'Float'
+    '5': 'Long',#'Long'
+    '6': 'Text',#'Text'
+    '7': '11'#'BLOB'
+    # 可以继续添加其他映射...
 } 
