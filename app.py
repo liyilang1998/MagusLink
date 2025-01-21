@@ -11,15 +11,15 @@ app = Flask(__name__)
 app.json.sort_keys = False  # 防止 Flask 自动排序 JSON 键
 
 
-def try_parse_time(ts: str) -> Tuple[bool, datetime]:
-    if ts is None:
-        return False, datetime.min
-    # 尝试转换
-    try:
-        to = parser.parse(ts, fuzzy=False)
-        return True, to
-    except ValueError:
-        return False, datetime.min
+# def try_parse_time(ts: str) -> Tuple[bool, datetime]:
+#     if ts is None:
+#         return False, datetime.min
+#     # 尝试转换
+#     try:
+#         to = parser.parse(ts, fuzzy=False)
+#         return True, to
+#     except ValueError:
+#         return False, datetime.min
     
     
 @app.route('/')
@@ -174,24 +174,18 @@ def TagFind():
     if where_conditions:
         where_clause = ' WHERE ' + ' AND '.join(where_conditions)
     
-    # 先获取总数
-    count_query = f'SELECT COUNT(*) as total FROM Point{where_clause}'
-    resultSet = con.executeQuery(count_query)
-    totalCount = 0
-    if resultSet.Next():
-        totalCount = resultSet.getInt('total')
-    # resultSet.close()
-    
-    # 执行主查询
+    # 执行查询
     query = base_query + where_clause
     print(f"Executing query: {query}")
     resultSet = con.executeQuery(query)
     RevList = []
     current_index = 0
     items_added = 0
+    totalCount = 0  # 用于计算总记录数
     
     try:
         while resultSet.Next():
+            totalCount += 1  # 计算总记录数
             # 只有当当前索引大于等于 from_index 时才考虑添加数据
             if current_index >= from_index:
                 # 如果没有指定count或者还没有达到指定的数量，则添加数据
@@ -278,15 +272,32 @@ def TagGet():
     
     return RevList
 
-@app.route('/Data/<path>', methods=['GET'])
+@app.route('/Data/<path>', methods=['GET', 'POST'])  # 添加 POST 方法
 def Dataindex(path):
     if path == 'SnapShot':
         try:
-            RevInfo = SnapShot()
+            if request.method == 'POST':
+                # 添加请求信息的调试输出
+                print("Content-Type:", request.headers.get('Content-Type'))
+                print("Request data:", request.data)
+                
+                # 获取并验证 POST 请求体
+                try:
+                    tag_list = request.get_json(force=True)  # 添加 force=True
+                    print("tag_list:", tag_list)
+                    if not isinstance(tag_list, list):
+                        return '请求体必须是位号名称列表', 400
+                except Exception as e:
+                    print("JSON parsing error:", str(e))
+                    return f'JSON解析错误: {str(e)}', 400
+                
+                RevInfo = SnapShot(tag_list)  # 传入标签列表
+            else:  # GET 方法
+                RevInfo = SnapShot()
             return jsonify(RevInfo)
         except Exception as e:
-            print(e)
-            return "Error processing Info", 500
+            print("Error in Dataindex:", str(e))
+            return f"Error processing Info: {str(e)}", 500
     elif path == 'HisValue':
         try:
             RevInfo = HisValue()
@@ -318,13 +329,17 @@ def Dataindex(path):
     else:
         return 'Not Found', 404
 
-def SnapShot():
-    # 从查询字符串中获取所有key=name的值对生成字典
-
-    TagList = request.args.getlist('name')
+def SnapShot(post_tags=None):
+    # 根据请求方法获取标签列表
+    if post_tags is not None:
+        TagList = post_tags  # 使用 POST 请求传入的标签列表
+    else:
+        TagList = request.args.getlist('name')  # GET 方法从查询参数获取
+    
     # 判断如果name列表为空则返回提示
-    if len(TagList) == 0:
-        return jsonify('Please enter at least one tagname'), 200
+    if TagList is None or len(TagList) <= 0:
+        return '未指定位号'
+    
     # 从配置中获取连接信息
     host = DB_CONFIG['HOST']
     port = DB_CONFIG['PORT']
@@ -337,36 +352,56 @@ def SnapShot():
         print('Connected Successful')
     else:
         print("Connect Error")
-        return jsonify(False), 200
+        return jsonify(False), 400
+    
     tableName = 'Realtime'
-    # keys取GN（全局名称）列表
     keys = TagList
-    # name result timeStamp status value
     colNames = ('GN', 'ID', 'TM', 'DS', 'AV')
-    # 定义返回的列表和字典
     RevList = []
 
     resultSet = con.select(tableName, colNames, keys)
     try:
         while resultSet.Next():
+            # 获取时间（datetime）并转换格式
+            timestamp = resultSet.getDateTime('TM')
+            
+            # 处理 name 和 result
+            name = resultSet.getValue('GN')
+            result = 0 if name and name.strip() else 1
+            
+            # 处理 status
+            status_value = resultSet.getString('DS')
+            # print(f"{name}-status_value:", status_value, type(status_value))
+            status = "192" if status_value == "0" else "-1"
+            
+            try:
+                # 转换为北京时间并格式化
+                dt_beijing = timestamp.astimezone(timezone(timedelta(hours=8)))
+                formatted_time = dt_beijing.isoformat()
+            except (ValueError, TypeError, AttributeError):
+                # 如果转换失败，尝试使用当前时间
+                current_time = datetime.now()
+                dt_beijing = current_time.astimezone(timezone(timedelta(hours=8)))
+                formatted_time = dt_beijing.isoformat()
+            
             # 使用 OrderedDict 确保字段顺序
             RevDic = OrderedDict([
-                ('name', resultSet.getValue('GN')),
-                ('result', resultSet.getValue('ID')),
-                ('timeStamp', resultSet.getValue('TM')),
-                ('status', resultSet.getValue('DS')),
-                ('value', resultSet.getValue('AV'))
+                ('name', name),
+                ('result', result),
+                ('timeStamp', formatted_time),
+                ('status', status),
+                ('value', resultSet.getString('AV'))
             ])
             RevList.append(RevDic)
     except Exception as e:
         print('error:', e)
+        return OrderedDict([("error", str(e))]), 500
     finally:
-        resultSet.close()  # 释放内存
-    con.close()  # 关闭连接，千万不要忘记！！！
-    print("Connect closed")
-    # print(RevList)
+        resultSet.close()
+        con.close()
+        print("Connect closed")
+
     return RevList
-    # return 'SnapShot',200
 
 def HisValue():
 
