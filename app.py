@@ -7,10 +7,21 @@ from collections import OrderedDict
 from config import DB_CONFIG, APP_CONFIG, VALUE_TYPE_MAP  # 导入配置和值类型映射
 from typing import Tuple
 import platform
+import os
+import sys
 
 app = Flask(__name__)
 app.json.sort_keys = False  # 防止 Flask 自动排序 JSON 键
     
+# 获取程序运行时的路径
+if getattr(sys, 'frozen', False):
+    application_path = os.path.dirname(sys.executable)
+else:
+    application_path = os.path.dirname(os.path.abspath(__file__))
+
+# 配置文件路径
+config_path = os.path.join(application_path, 'config.py')
+
 @app.route('/')
 def hello_world():
     return 'Cybstar.MagusDataLink by yilangli@cybstar.com'
@@ -113,7 +124,7 @@ def TagFind():
     # 获取查询参数
     from_index = request.args.get('From', type=int, default=0)
     count = request.args.get('Count', type=int, default=0)
-    name_filter = request.args.get('Name', default='')
+    name_filter = request.args.get('name', default='')
     desc_filter = request.args.get('Description', default='')
     vt_filter = request.args.get('vt', default='')
     try:
