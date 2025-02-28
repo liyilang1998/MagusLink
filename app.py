@@ -82,14 +82,14 @@ def Connected():
         return jsonify({"error": str(e)}), 500
     
 def ServiceSupport():
-    # 后续更新
+    # 先写死，后续更新
     support_dic = OrderedDict([
-        ("browseTag", "UnKnow"),
-        ("readTag", "UnKnow"),
-        ("writeTag", "UnKnow"),
-        ("interpolateHis", "UnKnow"),
-        ("readRawHis", "UnKnow"),
-        ("readHisStatics", "UnKnow")
+        ("browseTag", "enable"),
+        ("readTag", "enable"),
+        ("writeTag", "disable"),
+        ("interpolateHis", "enable"),
+        ("readRawHis", "enable"),
+        ("readHisStatics", "enable")
     ])
     return jsonify(support_dic), 200
 
@@ -125,8 +125,9 @@ def TagFind():
     from_index = request.args.get('From', type=int, default=0)
     count = request.args.get('Count', type=int, default=0)
     name_filter = request.args.get('name', default='')
-    desc_filter = request.args.get('Description', default='')
+    desc_filter = request.args.get('description', default='')
     vt_filter = request.args.get('vt', default='')
+    
     try:
         with MagusCon() as con:
             # 构建SQL查询语句
@@ -139,51 +140,48 @@ def TagFind():
                 where_conditions.append(f"ED LIKE '%{desc_filter}%'")
             if vt_filter:
                 where_conditions.append(f"RT = '{vt_filter}'")
+                
             # 拼接WHERE条件
             where_clause = ''
             if where_conditions:
                 where_clause = ' WHERE ' + ' AND '.join(where_conditions)
+            
             # 执行查询
             query = base_query + where_clause
             print(f"Executing query: {query}")
             resultSet = con.executeQuery(query)
-            RevList = []
-            current_index = 0
-            items_added = 0
-            totalCount = 0  # 用于计算总记录数
+            
+            # 先获取所有记录
+            all_records = []
             try:
                 while resultSet.Next():
-                    totalCount += 1  # 计算总记录数
-                    # 只有当当前索引大于等于 from_index 时才考虑添加数据
-                    if current_index >= from_index:
-                        # 如果没有指定count或者还没有达到指定的数量，则添加数据
-                        if count <= 0 or items_added < count:
-                            RevDic = OrderedDict([
-                                ('name', resultSet.getString('GN')),
-                                ('description', resultSet.getString('ED')),
-                                ('unit', resultSet.getString('EU')),
-                                ('valuetype', get_value_type(resultSet.getString('RT'))),
-                                ('tagID', resultSet.getString('ID')),
-                                ('engHigh', resultSet.getString('TV')),
-                                ('engLow', resultSet.getString('BV'))
-                            ])
-                            RevList.append(RevDic)
-                            items_added += 1
-                    current_index += 1
-                    # 如果已经获取到足够的数据，继续遍历以获取总数
-                    if count > 0 and items_added >= count:
-                        # 不要 break，继续计算总数
-                        continue
+                    RevDic = OrderedDict([
+                        ('name', resultSet.getString('GN')),
+                        ('description', resultSet.getString('ED')),
+                        ('unit', resultSet.getString('EU')),
+                        ('valuetype', get_value_type(resultSet.getString('RT'))),
+                        ('tagID', resultSet.getString('ID')),
+                        ('engHigh', resultSet.getString('TV')),
+                        ('engLow', resultSet.getString('BV'))
+                    ])
+                    all_records.append(RevDic)
             finally:
-                resultSet.close()  # 确保 resultSet 被关闭
+                resultSet.close()
                 
+            # 计算总记录数
+            totalCount = len(all_records)
+            
+            # 处理分页
+            beginIndex = min(from_index, totalCount)
+            if count > 0:
+                RevList = all_records[beginIndex:beginIndex + count]
+            else:
+                RevList = all_records[beginIndex:]
+            
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-    # 计算实际的起始索引
-    beginIndex = min(from_index, totalCount)
-    
     RevFList = OrderedDict([
         ("totalCount", totalCount),
         ("beginIndex", beginIndex),
@@ -345,9 +343,9 @@ def HisValue():
     
     try:
         with MagusCon() as con:
-            tableName = 'History'  # 历史数据表名
+            tableName = 'Archive'  # 历史数据表名
             keys = TagList
-            colNames = ('GN', 'ID', 'TM', 'DS', 'AV')  # 与实时数据相同的列
+            colNames = ('GN', 'TM', 'AV')
             RevList = []
 
             # 使用指定时间查询历史数据
@@ -356,17 +354,13 @@ def HisValue():
                 while resultSet.Next():
                     # 获取时间并转换格式
                     timestamp = resultSet.getDateTime('TM')
-                    
                     # 处理 name 和 result
                     name = resultSet.getValue('GN')
                     result = 0 if name and name.strip() else 1
-                    
                     # 处理 status
                     status_value = resultSet.getString('DS')
                     status = "192" if status_value == "0" else "-1"
-                    
                     formatted_time = format_datetime_with_timezone(timestamp, query_time)
-                    
                     # 使用 OrderedDict 确保字段顺序
                     RevDic = OrderedDict([
                         ('name', name),
@@ -468,5 +462,6 @@ class MagusCon:
 if __name__ == '__main__':
     app.run(
         host=APP_CONFIG['HOST'], 
-        port=APP_CONFIG['PORT']
+        port=APP_CONFIG['PORT'],
+        threaded=True
     )
