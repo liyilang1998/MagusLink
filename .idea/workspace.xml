@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c9b7559-e514-48a9-b065-27e34392fa6a" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/app2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/Analysis-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/Analysis-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/EXE-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/EXE-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/MagusAPI.pkg" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/MagusAPI.pkg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/PKG-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/PKG-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/warn-magus_api.txt" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/warn-magus_api.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/MagusAPI.exe" beforeDir="false" afterPath="$PROJECT_DIR$/dist/MagusAPI.exe" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,25 +57,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Flask 服务器.Flask (app.py).executor": "Run",
-    "Flask 服务器.Flask (app2.py).executor": "Run",
-    "Python.test.executor": "Run",
-    "Python.test2.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "magus",
-    "last_opened_file_path": "D:/PythonProgram/LinkByFlask",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "vcs.Git",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Flask 服务器.Flask (app.py).executor&quot;: &quot;Run&quot;,
+    &quot;Flask 服务器.Flask (app2.py).executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test2.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;magus&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/PythonProgram/LinkByFlask&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\PythonProgram\LinkByFlask" />
@@ -177,7 +182,6 @@
     <recent_temporary>
       <list>
         <item itemvalue="Flask 服务器.Flask (app.py)" />
-        <item itemvalue="Flask 服务器.Flask (app2.py)" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.test2" />
       </list>
@@ -213,6 +217,8 @@
       <workItem from="1737334731912" duration="654000" />
       <workItem from="1737422507675" duration="238000" />
       <workItem from="1737466324422" duration="207000" />
+      <workItem from="1737706028466" duration="6000" />
+      <workItem from="1740038756010" duration="291000" />
     </task>
     <task id="LOCAL-00001" summary="服务器信息查询&#10;服务器连接状态">
       <option name="closed" value="true" />
