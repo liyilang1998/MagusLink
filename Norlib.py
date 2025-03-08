@@ -1,6 +1,7 @@
 from Scripts.OPAPI_36 import *
 from datetime import datetime, timezone
-from config import DB_CONFIG# 导入配置和值类型映射re
+from config import DB_CONFIG, APP_CONFIG, VALUE_TYPE_MAP, STATISTICAL_VALUE_TYPE_MAP  # 导入配置和值类型映射
+
 from typing import Union
 import re
 
@@ -19,10 +20,10 @@ class MagusCon:
         try:
             self.con = Connect(self.host, self.port, self.timeout, self.user, self.password)
             if self.con.isAlive():
-                print('Connected Successful')
+                # print('Connected Successful')
                 return True
             else:
-                print("Connect Error")
+                # print("Connect Error")
                 return False
         except Exception as e:
             print(f"Connection Error: {e}")
@@ -134,7 +135,7 @@ def decode_Ds(value):
         6: "报警抑制",
         7: "是否报警",
         8: "设备强制状态",
-        9: "质量坏",
+        9: "质量好坏",
         12: "有控制指令",
         13: "设备挂牌",
         14: "初始值",
@@ -144,8 +145,3 @@ def decode_Ds(value):
         if binary[15 - bit] == '1':  # 注意二进制字符串顺序
             print(f"bit {bit}: {flags[bit]}")
 
-# # 测试
-# decode_Ds(-32768)  # 输出关键位
-# decode_Ds(16384)   # 输出关键位
-# decode_Ds(100)   # 输出关键位
-decode_Ds(79)   # 输出关键位

@@ -1,6 +1,6 @@
 # 数据库连接配置
 DB_CONFIG = {
-    'HOST': '192.168.211.36',
+    'HOST': '10.25.29.12',
     'PORT': 8200,
     'TIMEOUT': 60,
     'USER': 'sis',
@@ -15,14 +15,14 @@ APP_CONFIG = {
 
 # 值类型映射关系
 VALUE_TYPE_MAP = {
-    '0': 'AX',#'AX'
-    '1': 'DX',#'DX'
-    '2': '2',#'Int16'
-    '3': '3',#'Int32'
-    '4': '4',#'Float'
-    '5': 'Long',#'Long'
-    '6': 'Text',#'Text'
-    '7': '11'#'BLOB'
+    'AX': 4,# 作为float
+    'DX': 11,# 作为布尔值
+    'I2': 2,# 作为Int16
+    'I4': 3,#  作为Int32
+    'R8': 5,# 作为Double
+    'Long': 20,# 作为Int64
+    'Text': 8,# 作为String
+    'Blob': 17# 作为Byte
     # 可以继续添加其他映射...
 }
 
@@ -31,4 +31,12 @@ STATISTICAL_VALUE_TYPE_MAP = {
     '1': '最大值',
     '2': '最小值',
     '4': '平均值'
+}
+
+# 质量过滤映射管理
+QUALITY_VALUE_TYPE_MAP = {
+    'ALL': 0, # 不过滤
+    'OnlyGood': 1, # 去除坏点
+    'OnlyTime': 2, # 去除超时
+    'OnlyHalf': 3 # 去除1/2
 }

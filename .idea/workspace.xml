@@ -6,11 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="0c9b7559-e514-48a9-b065-27e34392fa6a" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Norlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/Norlib.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/magus_api/Analysis-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/Analysis-00.toc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/magus_api/EXE-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/EXE-00.toc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/magus_api/MagusAPI.pkg" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/MagusAPI.pkg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/magus_api/PKG-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/PKG-00.toc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/PYZ-00.pyz" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/PYZ-00.pyz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/PYZ-00.toc" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/PYZ-00.toc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build/magus_api/warn-magus_api.txt" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/warn-magus_api.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/magus_api/xref-magus_api.html" beforeDir="false" afterPath="$PROJECT_DIR$/build/magus_api/xref-magus_api.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/MagusAPI.exe" beforeDir="false" afterPath="$PROJECT_DIR$/dist/MagusAPI.exe" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -231,6 +237,11 @@
       <workItem from="1740038756010" duration="291000" />
       <workItem from="1740753679741" duration="1003000" />
       <workItem from="1741228566400" duration="34000" />
+      <workItem from="1741363761240" duration="603000" />
+      <workItem from="1741397570165" duration="36000" />
+      <workItem from="1741399082847" duration="3000" />
+      <workItem from="1741404365836" duration="785000" />
+      <workItem from="1741405268385" duration="9000" />
     </task>
     <task id="LOCAL-00001" summary="服务器信息查询&#10;服务器连接状态">
       <option name="closed" value="true" />
@@ -312,7 +323,15 @@
       <option name="project" value="LOCAL" />
       <updated>1740753747640</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="1.请求地址优化">
+      <option name="closed" value="true" />
+      <created>1741364003904</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1741364003904</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

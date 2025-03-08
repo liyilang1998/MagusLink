@@ -1,5 +1,6 @@
 ('D:\\PythonProgram\\LinkByFlask\\build\\magus_api\\PYZ-00.pyz',
- [('Scripts', '-', 'PYMODULE'),
+ [('Norlib', 'D:\\PythonProgram\\LinkByFlask\\Norlib.py', 'PYMODULE'),
+  ('Scripts', '-', 'PYMODULE'),
   ('Scripts.OPAPI_36',
    'D:\\PythonProgram\\LinkByFlask\\.venv\\Scripts\\OPAPI_36.py',
    'PYMODULE'),
