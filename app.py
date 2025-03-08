@@ -319,61 +319,8 @@ def SnapShot(post_tags=None):
 
     return jsonify(RevList), 200
 def HisValue():
-    # 获取查询参数
-    TagList = request.args.getlist('name')  # 获取位号列表
-    time_str = request.args.get('time')     # 获取时间参数
-    
-    # 判断参数是否有效
-    if TagList is None or len(TagList) <= 0:
-        return jsonify({"error": "未指定位号"}), 400
-    if not time_str:
-        return jsonify({"error": "未指定时间"}), 400
-        
-    try:
-        # 将时间字符串转换为datetime对象
-        query_time = convert_time(time_str, strict_timezone=False)
-
-    except ValueError as e:
-        return jsonify({"error": "时间格式无效"}), 400
-    
-    try:
-        with MagusCon() as con:
-            tableName = 'Archive'  # 历史数据表名
-            keys = TagList
-            colNames = ('GN', 'ID', 'TM', 'DS', 'AV')
-            options={'datetime':query_time,'interval':1,'qtype':0}
-            RevList = []
-
-            # 使用指定时间查询历史数据
-            resultSet = con.select(tableName, colNames, keys, options)
-            try:
-                while resultSet.Next():
-                    # 获取时间并转换格式
-                    timestamp2 = resultSet.getDateTime('TM')
-                    # 处理 name 和 result
-                    name = resultSet.getValue('GN')
-                    result = 0 if name and name.strip() else 1
-                    # 处理 status
-                    status_value = resultSet.getString('DS')
-                    status = "192" if status_value == "0" else "-1"
-                    formatted_time = convert_time(timestamp2, strict_timezone=False, include_microseconds=False)
-                    # 使用 OrderedDict 确保字段顺序
-                    RevDic = OrderedDict([
-                        ('name', name),
-                        ('result', result),
-                        ('timeStamp', formatted_time),
-                        ('status', status),
-                        ('value', resultSet.getString('AV'))
-                    ])
-                    RevList.append(RevDic)
-            finally:
-                resultSet.close()  # 确保 resultSet 被关闭
-                
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": str(e)}), 500
-
-    return jsonify(RevList), 200
+ 
+    return 'HisValue', 200
 def RawHisValue():
 
     return 'RawHisValue', 200
@@ -381,87 +328,70 @@ def InterpolatedHisValue():
 
     return 'InterpolatedHisValue', 200
 def HisStatisticalValue():
-    # 获取查询参数
-    namelist = request.args.getlist('name')  # 获取位号列表
-    time_start = request.args.get('start')
-    time_end = request.args.get('end')
+  # 获取查询参数
+    name = request.args.getlist('name') 
+    start_time = request.args.get('start')
+    end_time = request.args.get('end')
     option = request.args.get('option')
+    qtype = request.args.get('statusFilter', default="OnlyGood")
 
     # 判断入参是否有效
-    if namelist is None:
+    if name is None:
         return jsonify({"error": "未指定位号"}), 400
-    elif len(namelist) > 1:
+    elif len(name) > 1:
         return jsonify({"error": "非法的位号参数"}), 400
-    if not time_start:
+    if not start_time:
         return jsonify({"error": "未指定开始时间"}), 400
-    if not time_end:
+    if not end_time:
         return jsonify({"error": "未指定结束时间"}), 400
-
+    if not option:
+        return jsonify({"error": "未指定统计值参数"}), 400
+    
     # 将时间字符串转换为datetime对象
-    query_time_start = convert_time(time_start, strict_timezone=False)
-    query_time_end = convert_time(time_end, strict_timezone=False)
+    query_time_start = convert_time(start_time, strict_timezone=False)
+    query_time_end = convert_time(end_time, strict_timezone=False)
 
     if query_time_start > query_time_end:
-        return jsonify({"error": "无效的时间范围"}), 400
+        return jsonify({"error": "无效的时间范围"}), 400     
 
-    # 判断option是否有效
-    if option is None :
-        return jsonify({"error": "未指定统计参数"}), 400
-    elif option not in STATISTICAL_VALUE_TYPE_MAP.keys():
-        return jsonify({"error": "非法的统计参数"}), 400
-    
     try:
         with MagusCon() as con:
-            tableName = 'Archive'  # 历史数据表名
-            keys = namelist
-            colNames = ('GN', 'ID', 'TM', 'DS', 'AV')
-            options={'end':query_time_end,'begin':query_time_start,'mode':'max','qtype':0}
-            RevList = []
+            # ----获取区间统计值max min avg----
+            keys_stat = name
+            tableName_stat = 'Archive'
+            # 拼接SQL语句
+            sqlshell_stat = f'select * from {tableName_stat} where GN = "{keys_stat[0]}" and mode = "{STATISTICAL_VALUE_TYPE_MAP[option]}" and qtype = "{QUALITY_VALUE_TYPE_MAP[qtype]}" and TM between "{query_time_start}" and "{query_time_end}"'
+            resultSet_stat = con.executeQuery(sqlshell_stat)
+            # resultSet对象存在及为0，否则为1
+            result1 = 0 if resultSet_stat else 1
+            # 处理status，返回值为0则192，否则为0
+            status_stat = 192 if resultSet_stat.getValue('DS') == 0 else 0
 
-            # 使用指定时间查询历史数据
-            resultSet = con.select(tableName, colNames, keys, options)
+            # 定义原始历史数据列表
+            RevDic = []
             try:
-                while resultSet.Next():
-                    # 获取时间并转换格式
-                    timestamp2 = resultSet.getDateTime('TM')
-                    # 处理 name 和 result
-                    name = resultSet.getValue('GN')
-                    result = 0 if name and name.strip() else 1
-                    # 处理 status
-                    status_value = resultSet.getString('DS')
-                    status = "192" if status_value == "0" else "-1"
-
+                while resultSet_stat.Next():
+                    timestamp2 = resultSet_stat.getDateTime('TM')
                     formatted_time = convert_time(timestamp2, strict_timezone=False, include_microseconds=False)
+                    # 处理status，返回值为0则192，否则为0
+                    status_archive = 192 if resultSet_stat.getValue('DS') == 0 else 0
                     # 使用 OrderedDict 确保字段顺序
-                    RevDic = OrderedDict([
-                        ('option', STATISTICAL_VALUE_TYPE_MAP.get(option)),
-                        ('result', result),
+                    valueList = OrderedDict([
+                        ('result', result1),
                         ('timeStamp', formatted_time),
-                        ('status', status),
-                        ('value', resultSet.getString('AV'))
-                    ])
-                    RevList.append(RevDic)
+                        ('status', status_stat),
+                        ('value', resultSet_stat.getString('AV')),
+                        ('option', STATISTICAL_VALUE_TYPE_MAP[option])
+                    ])    
+                    RevDic.append(valueList)
             finally:
-                resultSet.close()  # 确保 resultSet 被关闭
-                
+                resultSet_stat.close()  # 确保 resultSet 被关闭
+
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-    return jsonify(RevList), 200
-
-
-
-
-
-
-
-
-
-
-
-
-    return 'HisStaticalValue', 200
+    return jsonify(RevDic), 200
 def RawHisTrend():
     # 获取查询参数
     name = request.args.getlist('name') 

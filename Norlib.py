@@ -1,6 +1,6 @@
 from Scripts.OPAPI_36 import *
 from datetime import datetime, timezone
-from config import DB_CONFIG, APP_CONFIG, VALUE_TYPE_MAP, STATISTICAL_VALUE_TYPE_MAP  # 导入配置和值类型映射
+from config import DB_CONFIG  # 导入配置和值类型映射
 
 from typing import Union
 import re
@@ -122,26 +122,24 @@ def convert_time(
     except AttributeError as e:
         raise TypeError(f"无效的时区类型: {str(e)}") from e
     
-def decode_Ds(value):
-    binary = format(value & 0xFFFF, '016b')  # 转为16位二进制补码
-    print(f"二进制: {binary}")
-    flags = {
-        0: "开关量值",
-        1: "报警位",
-        2: "报警位",
-        3: "报警位",
-        4: "报警位",
-        5: "报警未确认",
-        6: "报警抑制",
-        7: "是否报警",
-        8: "设备强制状态",
-        9: "质量好坏",
-        12: "有控制指令",
-        13: "设备挂牌",
-        14: "初始值",
-        15: "超时"
-    }
-    for bit in flags:
-        if binary[15 - bit] == '1':  # 注意二进制字符串顺序
-            print(f"bit {bit}: {flags[bit]}")
+def decode_Ds(value: int) -> int:
+    # 将输入值转换为32位的二进制字符串，去掉前缀'0b'并确保长度至少为16位
+    bits = format(value, '016b')
+    
+    # 获取bit 9和bit 15的值
+    bit_9 = bits[-10]  # 注意，这里使用-10是因为我们需要从右边数第10位
+    bit_15 = bits[-16] # 同理，从右边数第16位
+    
+    # 根据bit 9和bit 15的值决定返回结果
+    if bit_15 == '1':
+        return -1
+    elif bit_9 == '0':
+        return 192
+    else:  # bit_9 == '1'
+        return 0 if bit_9 == '1' else 128
+
+# 示例调用
+
+
+
 
