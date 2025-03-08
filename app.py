@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from Scripts.OPAPI_36 import *
 from datetime import datetime
 from collections import OrderedDict
-from config import APP_CONFIG, STATISTICAL_VALUE_TYPE_MAP, QUALITY_VALUE_TYPE_MAP  # 导入配置和值类型映射
+from config import APP_CONFIG, STATISTICAL_VALUE_TYPE_MAP, VALUE_TYPE_MAP, QUALITY_VALUE_TYPE_MAP  # 导入配置和值类型映射
 import platform
 import os, sys
 from Norlib import *
@@ -319,11 +319,60 @@ def SnapShot(post_tags=None):
 
     return jsonify(RevList), 200
 def HisValue():
- 
     return 'HisValue', 200
-def RawHisValue():
 
-    return 'RawHisValue', 200
+def RawHisValue():
+   # 获取查询参数
+    name = request.args.getlist('name') 
+    start_time = request.args.get('start')
+    end_time = request.args.get('end')
+
+    # 判断入参是否有效
+    if name is None:
+        return jsonify({"error": "未指定位号"}), 400
+    elif len(name) > 1:
+        return jsonify({"error": "非法的位号参数"}), 400
+    if not start_time:
+        return jsonify({"error": "未指定开始时间"}), 400
+    if not end_time:
+        return jsonify({"error": "未指定结束时间"}), 400
+
+    # 将时间字符串转换为datetime对象
+    query_time_start = convert_time(start_time, strict_timezone=False)
+    query_time_end = convert_time(end_time, strict_timezone=False)
+
+    if query_time_start > query_time_end:
+        return jsonify({"error": "无效的时间范围"}), 400
+
+    try:
+        with MagusCon() as con:
+            keys_archive = name
+            tableName_archive = 'Archive'
+            # 拼接SQL语句
+            sqlshell_archive = f'select * from {tableName_archive} where GN = "{keys_archive[0]}" and TM between "{query_time_start}" and "{query_time_end}"'
+            resultSet_archive = con.executeQuery(sqlshell_archive)
+            # 定义原始历史数据列表
+            RevDic = []
+            try:
+                while resultSet_archive.Next():
+                    timestamp2 = resultSet_archive.getDateTime('TM')
+                    formatted_time = convert_time(timestamp2, strict_timezone=False, include_microseconds=False)
+                    # 处理status，返回值为0则192，否则为0
+                    status_archive = 192 if resultSet_archive.getValue('DS') == 0 else 0
+                    # 使用 OrderedDict 确保字段顺序
+                    valueList = OrderedDict([
+                        ('timeStamp', formatted_time),
+                        ('status', status_archive),
+                        ('value', resultSet_archive.getString('AV'))
+                    ])    
+                    RevDic.append(valueList)
+            finally:
+                resultSet_archive.close()  # 确保 resultSet 被关闭
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify(RevDic), 200
 def InterpolatedHisValue():
     # 获取查询参数
     name = request.args.getlist('name') 
