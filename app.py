@@ -319,8 +319,8 @@ def SnapShot(post_tags=None):
 
     return jsonify(RevList), 200
 def HisValue():
-    return 'HisValue', 200
 
+    return 'HisValue', 200
 def RawHisValue():
    # 获取查询参数
     name = request.args.getlist('name') 
@@ -669,6 +669,7 @@ def InterpolatedHisTrend():
         return jsonify({"error": str(e)}), 500
 
     return jsonify(RevDic), 200
+
 if __name__ == '__main__':
 
     app.run(
